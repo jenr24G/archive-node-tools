@@ -16,7 +16,7 @@ instance Ord ArchiveDump where
 
 parseArchiveDumpMetadata :: String -> Maybe ArchiveDump
 parseArchiveDumpMetadata dumpName = do
-  dumpMetadata <- case runParser devnetParser "" dumpName of
+  dumpMetadata <- case runParser dumpParser "" dumpName of
     Left _ -> Nothing
     Right metadata -> Just metadata
   pure $ ArchiveDump dumpName dumpMetadata
@@ -24,14 +24,24 @@ parseArchiveDumpMetadata dumpName = do
 associateKeyMetadata :: [String] -> [ArchiveDump]
 associateKeyMetadata = mapMaybe parseArchiveDumpMetadata
 
+data MinaNetwork
+  = Mainnet
+  | Devnet
+  | Berkeley
+  deriving (Eq, Ord, Enum)
+instance Show MinaNetwork where
+  show :: MinaNetwork -> String
+  show Mainnet = "mainnet"
+  show Devnet = "devnet"
+  show Berkeley = "berkeley"
+
 data ArchiveDumpMetadata = 
   ArchiveDumpMetadata
-  { version :: Int,
-    year :: Int,
-    month :: Int,
-    day :: Int
-  }
-  deriving (Show, Eq)
+  { dumpNetwork :: MinaNetwork
+  , year :: Int
+  ,  month :: Int
+  , day :: Int
+  } deriving (Show, Eq)
 
 instance Ord ArchiveDumpMetadata where
   compare d1 d2
@@ -40,13 +50,15 @@ instance Ord ArchiveDumpMetadata where
     | otherwise = compare (day d1) (day d2)
 
 
-devnetVersion :: Parser Int
-devnetVersion =
-  try (1 <$ string "devnet-archive-dump-")
-    <|> (2 <$ string "devnet2-archive-dump-")
+minaNetwork :: Parser MinaNetwork
+minaNetwork =
+  try (Devnet <$ string "devnet-archive-dump-") 
+  <|> (Mainnet <$ string "mainnet-archive-dump-")
+  <|> (Mainnet <$ string "archive-dump-")
+  <|> (Berkeley <$ string "berkeley-archive-dump-")
 
-devnetDate :: Parser (Int, Int, Int)
-devnetDate = do
+dumpDate :: Parser (Int, Int, Int)
+dumpDate = do
   year <- many digitChar
   char '-'
   month <- many digitChar
@@ -54,8 +66,8 @@ devnetDate = do
   day <- many digitChar
   pure (read year, read month, read day)
 
-devnetParser :: Parser ArchiveDumpMetadata
-devnetParser = do
-  version <- try devnetVersion
-  (year, month, day) <- devnetDate
-  pure $ ArchiveDumpMetadata version year month day
+dumpParser :: Parser ArchiveDumpMetadata
+dumpParser = do
+  network <- minaNetwork
+  (year, month, day) <- dumpDate
+  pure $ ArchiveDumpMetadata network year month day
