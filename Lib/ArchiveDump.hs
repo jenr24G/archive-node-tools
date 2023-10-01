@@ -3,6 +3,7 @@ import Text.Megaparsec (Parsec, MonadParsec (try), (<|>), many, runParser)
 import Data.Void (Void)
 import Text.Megaparsec.Char (string, digitChar, char)
 import Data.Maybe (mapMaybe)
+import qualified Text.ParserCombinators.ReadPrec
 
 type Parser = Parsec Void String
 
@@ -28,7 +29,7 @@ data MinaNetwork
   = Mainnet
   | Devnet
   | Berkeley
-  deriving (Eq, Ord, Enum)
+  deriving (Eq, Ord, Enum, Read)
 instance Show MinaNetwork where
   show :: MinaNetwork -> String
   show Mainnet = "mainnet"
@@ -48,7 +49,6 @@ instance Ord ArchiveDumpMetadata where
     | year d1 /= year d2 = compare (year d1) (year d2)
     | month d1 /= month d2 = compare (month d1) (month d2)
     | otherwise = compare (day d1) (day d2)
-
 
 minaNetwork :: Parser MinaNetwork
 minaNetwork =

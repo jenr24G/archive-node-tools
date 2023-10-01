@@ -22,8 +22,8 @@ import Database.PostgreSQL.Simple (close, connectPostgreSQL, execute_)
 import Database.Postgres.Temp (Config (..), DirectoryType (Permanent), defaultConfig, toConnectionString, with)
 import Distribution.Compat.CharParsing (digit)
 import Lib.ArchiveDump
-  ( ArchiveDump (ArchiveDump),
-    associateKeyMetadata,
+  ( ArchiveDump (ArchiveDump, dumpMetadata),
+    associateKeyMetadata, MinaNetwork(..), ArchiveDumpMetadata (dumpNetwork),
   )
 import Lib.Fetchers (fetchArchiveDump, fetchDatabaseDumpIndex)
 import Network.Curl (CurlOption, CurlResponse_ (respBody), URLString, curlGetResponse_, withCurlDo)
@@ -39,6 +39,8 @@ import Text.Megaparsec
   )
 import Text.Megaparsec.Char (char, digitChar, string)
 import Text.XML.Light (Attr, CData (cdData), Content (Elem, Text), Element (Element, elAttribs, elContent, elName), QName (qName), parseXML)
+import Data.List.Extra (enumerate)
+import qualified Data.List as List
 
 getListBucketsResult :: Content -> [Content]
 getListBucketsResult = \case
@@ -48,8 +50,8 @@ getListBucketsResult = \case
       else []
   _ -> []
 
-getDevnetKeys :: [Content] -> [String]
-getDevnetKeys =
+getDumpKeys :: [Content] -> [String]
+getDumpKeys =
   mapMaybe
     ( \content -> do
         keyElement <- case content of
@@ -68,7 +70,7 @@ getDevnetKeys =
         case textElement of
           Text cd ->
             let dumpName = cdData cd
-             in if "devnet" `isInfixOf` dumpName
+             in if List.any ((`isInfixOf` dumpName) . show) [Mainnet, Devnet, Berkeley]
                   then Just dumpName
                   else Nothing
           _ -> Nothing
@@ -76,9 +78,15 @@ getDevnetKeys =
 
 main :: IO ()
 main = do
+  putStr "input desired network: "
+  network :: MinaNetwork <- getLine <&> read
   putStrLn "getting database backup keys..."
-  devnetKeys <- fetchDatabaseDumpIndex <&> (getDevnetKeys . getListBucketsResult . (!! 1))
-  let keysByDate = sort $ associateKeyMetadata devnetKeys
+  keysByDate <- fetchDatabaseDumpIndex >>= ( return
+      . sort
+      . filter (\dump -> network == 
+        (dumpNetwork . dumpMetadata) dump)
+      . associateKeyMetadata
+      ) . getDumpKeys . getListBucketsResult . (!! 1)
   let (ArchiveDump targetKey metadata) = last keysByDate
   let archiveDumpTar = "database_dumps/" ++ targetKey
   let archiveDumpFilename = take (length archiveDumpTar - length (".tar.gz" :: String)) archiveDumpTar
