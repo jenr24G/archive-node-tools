@@ -83,12 +83,15 @@ main = do
   network :: MinaNetwork <- getLine <&> read
   putStrLn "getting database backup keys..."
   keysByDate <- fetchDatabaseDumpIndex >>= 
-    ( return
-      . sort
-      . filter (\dump -> network == 
-        (dumpNetwork . dumpMetadata) dump)
-      . parseDumps
-      ) . getDumpKeys . getListBucketsResult . (!! 1)
+    ( \index -> (index !! 1)
+    & getListBucketsResult
+    & getDumpKeys
+    & parseDumps
+    & filter (\dump -> network ==
+      (dumpNetwork . dumpMetadata) dump)
+    & sort
+    & return
+    )
   let (ArchiveDump targetKey metadata) = last keysByDate
   let archiveDumpTar = "database_dumps/" ++ targetKey
   let archiveDumpFilename = take (length archiveDumpTar - length (".tar.gz" :: String)) archiveDumpTar

@@ -1,13 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module TemporaryArchiveDatabase where
@@ -29,7 +25,7 @@ import System.Directory
     ( getDirectoryContents, removeDirectoryRecursive, removeDirectory )
 import System.IO (IOMode (ReadMode), withFile)
 import Lib.ArchiveDump
-    ( ArchiveDump(ArchiveDump, dumpMetadata), associateKeyMetadata, MinaNetwork, ArchiveDumpMetadata (dumpNetwork) )
+    ( ArchiveDump(ArchiveDump, dumpMetadata), parseDumps, MinaNetwork, ArchiveDumpMetadata (dumpNetwork) )
 import Lib.DatabaseCommands (restoreDatabaseBackup)
 import System.Environment (getEnv)
 import Data.Kind (Type)
@@ -102,7 +98,7 @@ migrateArchiveDumpBackup conn = do
         . sort 
         . filter (\dump -> network == 
             (dumpNetwork . dumpMetadata) dump) 
-        $ associateKeyMetadata filenames
+        $ parseDumps filenames
   let (ArchiveDump targetKey metadata) : dumps = archiveDumps
 
   let archiveDumpFilename = databaseDumpDir ++ "/" ++ targetKey
