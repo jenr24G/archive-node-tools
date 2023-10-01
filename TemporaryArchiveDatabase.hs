@@ -10,7 +10,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Main where
+module TemporaryArchiveDatabase where
 
 import Control.Monad (forever, guard, void, when)
 import Control.Monad.Catch (bracket)
