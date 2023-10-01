@@ -1,6 +1,7 @@
 { pkgs ? import <nixpkgs> {} }:
 pkgs.mkShell {
   buildInputs = with pkgs; [
+    bash
     haskell-language-server
     rnix-lsp nixpkgs-fmt
     geos gdal
