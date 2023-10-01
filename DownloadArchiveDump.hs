@@ -14,6 +14,7 @@ import Data.ByteString.Lazy (fromStrict, toStrict)
 import Data.Data (DataRep)
 import Data.Either (rights)
 import Data.Functor ((<&>))
+import Data.Function ((&))
 import Data.List (isInfixOf, sort, sortBy)
 import Data.Maybe (catMaybes, isJust, mapMaybe)
 import Data.Monoid (Last (..))
@@ -23,7 +24,7 @@ import Database.Postgres.Temp (Config (..), DirectoryType (Permanent), defaultCo
 import Distribution.Compat.CharParsing (digit)
 import Lib.ArchiveDump
   ( ArchiveDump (ArchiveDump, dumpMetadata),
-    associateKeyMetadata, MinaNetwork(..), ArchiveDumpMetadata (dumpNetwork),
+    parseDumps, MinaNetwork(..), ArchiveDumpMetadata (dumpNetwork),
   )
 import Lib.Fetchers (fetchArchiveDump, fetchDatabaseDumpIndex)
 import Network.Curl (CurlOption, CurlResponse_ (respBody), URLString, curlGetResponse_, withCurlDo)
@@ -81,11 +82,12 @@ main = do
   putStr "input desired network: "
   network :: MinaNetwork <- getLine <&> read
   putStrLn "getting database backup keys..."
-  keysByDate <- fetchDatabaseDumpIndex >>= ( return
+  keysByDate <- fetchDatabaseDumpIndex >>= 
+    ( return
       . sort
       . filter (\dump -> network == 
         (dumpNetwork . dumpMetadata) dump)
-      . associateKeyMetadata
+      . parseDumps
       ) . getDumpKeys . getListBucketsResult . (!! 1)
   let (ArchiveDump targetKey metadata) = last keysByDate
   let archiveDumpTar = "database_dumps/" ++ targetKey

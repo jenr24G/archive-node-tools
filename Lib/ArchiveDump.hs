@@ -22,8 +22,8 @@ parseArchiveDumpMetadata dumpName = do
     Right metadata -> Just metadata
   pure $ ArchiveDump dumpName dumpMetadata
 
-associateKeyMetadata :: [String] -> [ArchiveDump]
-associateKeyMetadata = mapMaybe parseArchiveDumpMetadata
+parseDumps :: [String] -> [ArchiveDump]
+parseDumps = mapMaybe parseArchiveDumpMetadata
 
 data MinaNetwork
   = Mainnet
