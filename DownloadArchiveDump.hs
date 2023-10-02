@@ -40,7 +40,6 @@ import Text.Megaparsec
   )
 import Text.Megaparsec.Char (char, digitChar, string)
 import Text.XML.Light (Attr, CData (cdData), Content (Elem, Text), Element (Element, elAttribs, elContent, elName), QName (qName), parseXML)
-import Data.List.Extra (enumerate)
 import qualified Data.List as List
 
 getListBucketsResult :: Content -> [Content]
